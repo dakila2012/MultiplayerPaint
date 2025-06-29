@@ -1,8 +1,9 @@
 using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
+using Photon.Pun;
 
-public class PaintCanvas : MonoBehaviour
+public class PaintCanvas : MonoBehaviourPunCallbacks
 {
     [SerializeField] private RawImage canvasImage; // The UI RawImage for the canvas
     [SerializeField] private Button brushButton; // Button to select brush mode
@@ -69,7 +70,7 @@ public class PaintCanvas : MonoBehaviour
 
     void Update()
     {
-        if (isDrawing)
+        if (isDrawing && PhotonNetwork.IsConnected)
         {
             // Read mouse position from Input System
             Vector2 mousePos = inputActions.Paint.MousePosition.ReadValue<Vector2>();
@@ -89,10 +90,11 @@ public class PaintCanvas : MonoBehaviour
             {
                 if (!lastMousePos.Equals(Vector2.zero)) // Simulate GetMouseButtonDown
                 {
-                    DrawLine(lastMousePos, currentPos);
+                    // Send drawing command to all clients
+                    photonView.RPC("DrawLineRPC", RpcTarget.AllBuffered, lastMousePos, currentPos, 
+                        currentColor, brushSize, isBrushMode);
                 }
                 lastMousePos = currentPos;
-                canvasTexture.Apply();
             }
         }
     }
@@ -108,7 +110,8 @@ public class PaintCanvas : MonoBehaviour
         isDrawing = false;
     }
 
-    void DrawLine(Vector2 start, Vector2 end)
+    [PunRPC]
+    void DrawLineRPC(Vector2 start, Vector2 end, Color color, float size, bool isBrush)
     {
         // Simple line drawing using Bresenham-like interpolation
         float distance = Vector2.Distance(start, end);
@@ -117,15 +120,16 @@ public class PaintCanvas : MonoBehaviour
         {
             float t = steps > 0 ? i / (float)steps : 0;
             Vector2 point = Vector2.Lerp(start, end, t);
-            DrawCircle(Mathf.RoundToInt(point.x), Mathf.RoundToInt(point.y));
+            DrawCircle(Mathf.RoundToInt(point.x), Mathf.RoundToInt(point.y), color, size, isBrush);
         }
+        canvasTexture.Apply();
     }
 
-    void DrawCircle(int x, int y)
+    void DrawCircle(int x, int y, Color color, float size, bool isBrush)
     {
         // Draw a filled circle for the brush/eraser
-        int radius = Mathf.RoundToInt(brushSize);
-        Color drawColor = isBrushMode ? currentColor : Color.white; // Eraser uses white
+        int radius = Mathf.RoundToInt(size);
+        Color drawColor = isBrush ? color : Color.white; // Eraser uses white
 
         for (int i = -radius; i <= radius; i++)
         {
@@ -158,6 +162,15 @@ public class PaintCanvas : MonoBehaviour
     }
 
     void OnClearButton()
+    {
+        if (PhotonNetwork.IsMasterClient)
+        {
+            photonView.RPC("ClearCanvasRPC", RpcTarget.AllBuffered);
+        }
+    }
+
+    [PunRPC]
+    void ClearCanvasRPC()
     {
         ClearCanvas();
         canvasTexture.Apply();
