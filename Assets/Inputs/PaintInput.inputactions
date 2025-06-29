@@ -1,0 +1,54 @@
+{
+    "name": "PaintInput",
+    "maps": [
+        {
+            "name": "Paint",
+            "id": "29581dac-9afd-432d-9d6e-6703171b379c",
+            "actions": [
+                {
+                    "name": "Draw",
+                    "type": "Button",
+                    "id": "7f8aba52-77b0-41c2-bb5f-3e75291a389a",
+                    "expectedControlType": "",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": false
+                },
+                {
+                    "name": "MousePosition",
+                    "type": "Value",
+                    "id": "e7773b83-0837-43ad-8785-5086abca0952",
+                    "expectedControlType": "Vector2",
+                    "processors": "",
+                    "interactions": "",
+                    "initialStateCheck": true
+                }
+            ],
+            "bindings": [
+                {
+                    "name": "",
+                    "id": "bab5996a-a927-4a9d-942b-ca11b7613295",
+                    "path": "<Mouse>/leftButton",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "Draw",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                },
+                {
+                    "name": "",
+                    "id": "47f763c2-6a3a-4777-8fc4-f300d2451e4d",
+                    "path": "<Mouse>/position",
+                    "interactions": "",
+                    "processors": "",
+                    "groups": "",
+                    "action": "MousePosition",
+                    "isComposite": false,
+                    "isPartOfComposite": false
+                }
+            ]
+        }
+    ],
+    "controlSchemes": []
+}
