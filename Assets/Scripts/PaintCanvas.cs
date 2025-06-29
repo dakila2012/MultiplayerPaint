@@ -2,6 +2,7 @@ using UnityEngine;
 using UnityEngine.InputSystem;
 using UnityEngine.UI;
 using Photon.Pun;
+using Photon.Realtime;
 
 public class PaintCanvas : MonoBehaviourPunCallbacks
 {
@@ -14,6 +15,7 @@ public class PaintCanvas : MonoBehaviourPunCallbacks
     [SerializeField] private Button blueButton; // Button to select blue color
     [SerializeField] private Button greenButton; // Button to select green color
     [SerializeField] private Slider sizeSlider; // Slider to adjust brush/eraser size
+    [SerializeField] private Text playerListText; // Text to display player nicknames
 
     private Texture2D canvasTexture; // Texture for drawing
     private Color currentColor = Color.red; // Default brush color
@@ -66,6 +68,9 @@ public class PaintCanvas : MonoBehaviourPunCallbacks
         // Initialize UI state
         colorPanel.SetActive(false);
         sizeSlider.value = brushSize;
+
+        // Update player list
+        UpdatePlayerList();
     }
 
     void Update()
@@ -90,9 +95,9 @@ public class PaintCanvas : MonoBehaviourPunCallbacks
             {
                 if (!lastMousePos.Equals(Vector2.zero)) // Simulate GetMouseButtonDown
                 {
-                    // Send drawing command to all clients
+                    // Send color as individual float components
                     photonView.RPC("DrawLineRPC", RpcTarget.AllBuffered, lastMousePos, currentPos, 
-                        currentColor, brushSize, isBrushMode);
+                        currentColor.r, currentColor.g, currentColor.b, currentColor.a, brushSize, isBrushMode);
                 }
                 lastMousePos = currentPos;
             }
@@ -111,8 +116,10 @@ public class PaintCanvas : MonoBehaviourPunCallbacks
     }
 
     [PunRPC]
-    void DrawLineRPC(Vector2 start, Vector2 end, Color color, float size, bool isBrush)
+    void DrawLineRPC(Vector2 start, Vector2 end, float r, float g, float b, float a, float size, bool isBrush)
     {
+        // Reconstruct Color from float components
+        Color color = new Color(r, g, b, a);
         // Simple line drawing using Bresenham-like interpolation
         float distance = Vector2.Distance(start, end);
         int steps = Mathf.CeilToInt(distance / 1f);
@@ -190,10 +197,34 @@ public class PaintCanvas : MonoBehaviourPunCallbacks
     void SetColor(Color color)
     {
         currentColor = color;
+        colorPanel.SetActive(false); // Hide color panel after selecting a color
     }
 
     void SetBrushSize(float size)
     {
         brushSize = size;
+    }
+
+    public override void OnPlayerEnteredRoom(Player newPlayer)
+    {
+        UpdatePlayerList();
+    }
+
+    public override void OnPlayerLeftRoom(Player otherPlayer)
+    {
+        UpdatePlayerList();
+    }
+
+    void UpdatePlayerList()
+    {
+        if (playerListText != null)
+        {
+            string playerList = "Players:\n";
+            foreach (Player player in PhotonNetwork.PlayerList)
+            {
+                playerList += player.NickName + "\n";
+            }
+            playerListText.text = playerList;
+        }
     }
 }
